@@ -125,6 +125,9 @@ export class UI {
   private miniCanvas = h('canvas')
   private miniWindow = h('div', 'minimap-window')
   private miniDirty = true
+  private stats = h('section', 'stats glass no-pan')
+  private statsKey = ''
+  private statsFocus = ''
   private vbar = h('div', 'vbar no-pan')
   private vthumb = h('div', 'vbar-thumb')
   private tip = h('div', 'tip glass')
@@ -147,12 +150,14 @@ export class UI {
     this.buildTop()
     this.buildBar()
     this.buildMinimap()
+    this.stats.setAttribute('aria-label', 'Posts per month')
+    document.body.append(this.stats)
     this.buildScrollbar()
     this.buildDirectory()
     document.body.append(this.tip)
     board.onRender(b => this.update(b))
     store.on(c => {
-      if (c.kind === 'days') this.miniDirty = true
+      if (c.kind === 'days') { this.miniDirty = true; this.statsKey = '' }
       if (c.kind === 'directory') this.renderDirectory()
       if (c.kind === 'comments' && c.postId === this.commentsFor) this.renderThread()
     })
@@ -296,13 +301,15 @@ export class UI {
     const off = tx < 0 ? -1 : tx > cam.vw ? 1 : 0
     this.todayBtn.dataset.dir = String(off)
 
+    this.updateStats(b)
+
     // Minimap
     const showMini = b.lod !== 'year'
     this.mini.classList.toggle('is-on', showMini)
     if (showMini) this.drawMinimap(b)
 
     // Vertical scrollbar
-    const track = cam.vh - cam.baseline - (compact.matches ? 150 : 110)
+    const track = cam.vh - cam.baseline - (compact.matches ? 240 : 110)
     if (cam.maxY > 4 && track > 60) {
       const content = cam.maxY + track
       const th = Math.max(36, (track * track) / content)
@@ -311,6 +318,70 @@ export class UI {
       this.vthumb.style.height = `${th}px`
       this.vthumb.style.transform = `translate3d(0,${(cam.y / cam.maxY) * (track - th)}px,0)`
     } else this.vbar.classList.remove('is-on')
+  }
+
+  // Posts per month (or per year in Year view) ------------------------------------
+
+  private updateStats(b: Board) {
+    const center = Math.floor(b.cam.day)
+    const { y, m } = T.ymd(center)
+    const year = b.lod === 'year'
+    const key = year ? `y${y}` : `m${y}-${m}`
+    if (key !== this.statsKey) { this.statsKey = key; this.renderStats(year, y, m) }
+    const focus = year ? String(m) : String(center)
+    if (focus !== this.statsFocus) {
+      this.statsFocus = focus
+      for (const bar of this.stats.querySelectorAll<HTMLElement>('.stats-bar')) bar.classList.toggle('is-current', bar.dataset.key === focus)
+    }
+  }
+
+  private renderStats(year: boolean, y: number, m: number) {
+    const counts = store.dayCounts
+    const cells: { key: string; label: string; posts: number; scheduled: number; go: () => void }[] = []
+    if (year) {
+      for (let k = 0; k < 12; k++) {
+        const s = T.dayOf(y, k, 1), e = T.dayOf(y, k + 1, 1)
+        let posts = 0, scheduled = 0
+        for (let d = s; d < e; d++) { const c = counts.get(d); if (c) { posts += c.posts; scheduled += c.scheduled } }
+        cells.push({ key: String(k), label: `${T.monthName(s)}, ${posts} post${posts === 1 ? '' : 's'}`, posts, scheduled,
+          go: () => this.board.goTo(Math.floor((s + e) / 2), this.board.presets.month) })
+      }
+    } else {
+      for (let d = T.dayOf(y, m, 1); d < T.dayOf(y, m + 1, 1); d++) {
+        const c = counts.get(d)
+        cells.push({ key: String(d), label: `${T.weekdayShort(d)} ${T.dayMonth(d)}, ${c?.posts ?? 0} post${c?.posts === 1 ? '' : 's'}`,
+          posts: c?.posts ?? 0, scheduled: c?.scheduled ?? 0, go: () => this.board.goTo(d, Math.max(this.board.cam.dw, this.board.presets.month)) })
+      }
+    }
+    const total = cells.reduce((a, c) => a + c.posts, 0)
+    const scheduled = cells.reduce((a, c) => a + c.scheduled, 0)
+    const max = Math.max(1, ...cells.map(c => c.posts))
+    const head = h('div', 'stats-head')
+    head.append(h('strong', 'stats-total', total.toLocaleString('en-GB')),
+      h('span', 'stats-label', `post${total === 1 ? '' : 's'} in ${year ? y : `${T.monthName(T.dayOf(y, m, 1))} ${y}`}`))
+    const bars = h('div', `stats-bars${year ? ' is-year' : ''}`)
+    for (const c of cells) {
+      const bar = h('button', `stats-bar${c.posts ? '' : ' is-empty'}`)
+      bar.type = 'button'
+      bar.dataset.key = c.key
+      bar.title = c.label
+      bar.setAttribute('aria-label', c.label)
+      const pub = c.posts - c.scheduled
+      if (pub) { const i = h('i', 'p'); i.style.height = `${(pub / max) * 100}%`; bar.append(i) }
+      if (c.scheduled) { const i = h('i', 's'); i.style.height = `${(c.scheduled / max) * 100}%`; bar.append(i) }
+      bar.addEventListener('click', c.go)
+      bars.append(bar)
+    }
+    const foot = h('p', 'stats-foot', !total ? 'No posts yet' : !scheduled ? 'All published'
+      : scheduled === total ? 'All scheduled' : `${(total - scheduled).toLocaleString('en-GB')} published, ${scheduled.toLocaleString('en-GB')} scheduled`)
+    this.stats.replaceChildren(head, bars)
+    if (year) {
+      const months = h('div', 'stats-months')
+      for (let k = 0; k < 12; k++) months.append(h('span', '', T.monthShort(T.dayOf(y, k, 1))[0]))
+      this.stats.append(months)
+    }
+    this.stats.append(foot)
+    this.statsFocus = ''
   }
 
   // Minimap ------------------------------------------------------------------------
