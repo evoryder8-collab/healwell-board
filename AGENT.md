@@ -26,7 +26,7 @@ How an agent adds and updates posts on the Healwell posts board. The board only 
 | `collaborators` | text[] | Instagram handles; normalized to `@lowercase` automatically |
 | `updated_at` | timestamptz | set automatically |
 
-**collaborators**: `handle` (unique, e.g. `@1iconstantine`), `name`, `updated_at`. Handles are added automatically when they appear on a post.
+**collaborators**: `handle` (unique, e.g. `@chutima.nuad`), `name`, `updated_at`. Handles are added automatically when they appear on a post.
 
 **comments**: `id`, `post_id` → posts.id, `author`, `body`, `created_at`. Written by people on the board; read them if you need them.
 
