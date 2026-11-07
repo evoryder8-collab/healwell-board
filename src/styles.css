@@ -127,7 +127,30 @@ button { -webkit-user-select: none; user-select: none; }
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 .play svg { width: 56%; fill: var(--on-media); margin-left: 8%; }
-.dots { position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); display: flex; gap: 3px; filter: drop-shadow(0 0 2px var(--media-badge)); }
+button.play { padding: 0; border: 0; cursor: pointer; transition: transform 0.15s var(--ease), background 0.15s; }
+button.play:hover { transform: scale(1.08); background: var(--accent); }
+.media.is-playing > .play, .media.is-playing > .nets { display: none; }
+.player { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; object-fit: cover; background: var(--media-badge); cursor: auto; }
+.dots { position: absolute; top: 7%; right: 7%; display: flex; gap: 3px; filter: drop-shadow(0 0 2px var(--media-badge)); }
+.nets {
+  position: absolute; left: 6px; bottom: 6px; display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 99px;
+  background: var(--media-badge); color: var(--on-media); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.net { display: grid; width: 13px; height: 13px; }
+.net svg { width: 13px; height: 13px; }
+.net.is-scheduled, .net.is-draft { opacity: 0.55; }
+.net.is-error { color: var(--danger); background: var(--on-media); border-radius: 50%; }
+.net-more { font-size: 10.5px; font-weight: 600; }
+.channels { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 2px; }
+.channel {
+  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px 0 7px; border-radius: 8px;
+  border: 1px solid var(--line); font-size: 12.5px; color: var(--ink); text-decoration: none; transition: border-color 0.15s, background 0.15s;
+}
+.channel svg { width: 14px; height: 14px; flex: none; }
+a.channel:hover { border-color: var(--accent-line); background: var(--accent-wash); color: var(--accent); }
+.channel.is-scheduled, .channel.is-draft { color: var(--ink-2); border-style: dashed; }
+.channel.is-error { color: var(--danger); border-color: var(--danger); }
+.channel-status { color: var(--ink-3); }
 .dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--on-media); opacity: 0.55; }
 .dots i:first-child { opacity: 1; }
 @container (max-width: 30px) { .play, .dots, .lod-month .media.is-scheduled::after { display: none; } }

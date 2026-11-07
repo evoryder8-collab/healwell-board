@@ -4,11 +4,13 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { monthKey, monthRange, monthStart, zurich } from './time'
 
 export type PostType = 'reel' | 'carousel' | 'image' | 'story'
+export interface Channel { network: string; status?: string | null; url?: string | null }
 export interface Comment { id: string; post_id: string; author: string; body: string; created_at: string }
 export interface Post {
   id: string; external_id: string; platform: string; type: PostType
   scheduled_at: string; published: boolean; media_url: string | null
   caption: string; collaborators: string[]; updated_at: string
+  channels: Channel[]; video_url: string | null
   comments: Comment[]
   day: number; minutes: number
 }

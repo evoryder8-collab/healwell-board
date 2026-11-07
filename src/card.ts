@@ -1,5 +1,6 @@
 // Cards at each level of detail, plus the caption and collaborator editors.
-import { normalizeHandle, store, type Post } from './store'
+import { byNetworkOrder, networkInfo, networkKey } from './networks'
+import { normalizeHandle, store, type Channel, type Post } from './store'
 import { clock, longDate, weekdayShort, dayMonth } from './time'
 
 export type Lod = 'year' | 'month' | 'week' | 'day'
@@ -88,7 +89,7 @@ export function makeCard(lod: Exclude<Lod, 'year'>, hooks: CardHooks): Card {
           if (img.complete && img.naturalWidth) media.classList.add('ok')
         }
       } else img.removeAttribute('src')
-      decorate(media, p)
+      decorate(media, p, lod)
       if (meta) {
         meta.innerHTML = ''
         meta.append(h('time', 'time', clock(p.minutes)), h('span', 'date', `${weekdayShort(p.day)} ${dayMonth(p.day)}`),
@@ -105,13 +106,83 @@ export function makeCard(lod: Exclude<Lod, 'year'>, hooks: CardHooks): Card {
   return card
 }
 
-function decorate(media: HTMLElement, p: Post) {
-  media.querySelector('.play, .dots')?.remove()
-  if (p.type === 'reel') {
-    const b = h('span', 'play'); b.innerHTML = PLAY; media.append(b)
+const channelsOf = (p: Post): Channel[] => [...(p.channels ?? [])].sort(byNetworkOrder)
+const statusOf = (c: Channel) => (c.status ?? 'published').toLowerCase()
+/** The original post on Instagram, if the agent recorded one. */
+export const instagramUrl = (p: Post) => p.channels?.find(c => networkKey(c.network) === 'instagram' && c.url)?.url ?? null
+
+let playing: HTMLVideoElement | null = null
+
+/** Plays the reel inside the card, or opens the original post when no file is playable. */
+function play(media: HTMLElement, p: Post) {
+  const original = instagramUrl(p)
+  if (!p.video_url) { if (original) open(original, '_blank', 'noopener'); return }
+  playing?.pause()
+  const v = h('video', 'player no-pan')
+  v.src = p.video_url
+  v.controls = true
+  v.playsInline = true
+  v.poster = p.media_url ?? ''
+  v.addEventListener('error', () => { v.remove(); media.classList.remove('is-playing'); if (original) open(original, '_blank', 'noopener') }, { once: true })
+  media.append(v)
+  media.classList.add('is-playing')
+  media.dataset.playing = p.id
+  playing = v
+  v.play().catch(() => { /* controls stay visible; a tap starts it */ })
+}
+
+function decorate(media: HTMLElement, p: Post, lod: Exclude<Lod, 'year'>) {
+  if (media.dataset.playing && media.dataset.playing !== p.id) {
+    media.querySelector('video')?.remove()
+    media.classList.remove('is-playing')
+    delete media.dataset.playing
+  }
+  media.querySelectorAll(':scope > .play, :scope > .dots, :scope > .nets').forEach(n => n.remove())
+  const actionable = lod !== 'month' && (!!p.video_url || !!instagramUrl(p))
+  if (p.type === 'reel' || p.video_url) {
+    const b = h(actionable ? 'button' : 'span', 'play')
+    b.innerHTML = PLAY
+    if (b instanceof HTMLButtonElement) {
+      b.type = 'button'
+      b.setAttribute('aria-label', p.video_url ? 'Play video' : 'Open the reel on Instagram')
+      b.title = p.video_url ? 'Play' : 'Open on Instagram'
+      b.addEventListener('click', e => { e.stopPropagation(); play(media, p) })
+    }
+    media.append(b)
   } else if (p.type === 'carousel') {
     const d = h('span', 'dots'); d.innerHTML = '<i></i><i></i><i></i><i></i>'; media.append(d)
   }
+  const chans = channelsOf(p)
+  if (lod === 'week' && chans.length) {
+    const nets = h('span', 'nets')
+    nets.setAttribute('aria-label', 'Posted to ' + chans.map(c => networkInfo(c.network).label).join(', '))
+    for (const c of chans.slice(0, 6)) {
+      const i = h('span', `net is-${statusOf(c)}`)
+      i.innerHTML = networkInfo(c.network).icon
+      nets.append(i)
+    }
+    if (chans.length > 6) nets.append(h('span', 'net-more', `+${chans.length - 6}`))
+    media.append(nets)
+  }
+}
+
+/** Day view: one chip per network, linking to the post there. */
+function channelRow(p: Post): HTMLElement | null {
+  const chans = channelsOf(p)
+  if (!chans.length) return null
+  const row = h('div', 'channels')
+  for (const c of chans) {
+    const info = networkInfo(c.network)
+    const status = statusOf(c)
+    const chip = c.url ? h('a', `channel is-${status}`) : h('span', `channel is-${status}`)
+    if (chip instanceof HTMLAnchorElement) { chip.href = c.url!; chip.target = '_blank'; chip.rel = 'noopener' }
+    chip.title = c.url ? `Open on ${info.label}` : `${info.label}, ${status}`
+    chip.innerHTML = info.icon
+    chip.append(h('span', '', info.label))
+    if (status !== 'published') chip.append(h('span', 'channel-status', status))
+    row.append(chip)
+  }
+  return row
 }
 
 // Day detail: caption, collaborators, comments --------------------------------
@@ -127,11 +198,15 @@ function dayDetail(hooks: CardHooks) {
   const talk = h('button', 'talk')
   talk.type = 'button'
   talk.addEventListener('click', () => post && hooks.openComments(post.id))
+  let chans: HTMLElement | null = null
   el.append(caption.el, collabs.el, talk)
   return {
     el,
     update(p: Post) {
       post = p
+      chans?.remove()
+      chans = channelRow(p)
+      if (chans) el.prepend(chans)
       caption.update()
       collabs.update()
       const n = p.comments.length

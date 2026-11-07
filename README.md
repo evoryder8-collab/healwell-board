@@ -86,7 +86,8 @@ src/main.ts        boot: link token, name prompt
 src/store.ts       data by date range, realtime, saves
 src/camera.ts      pan, zoom, momentum, input
 src/board.ts       ribbon, virtualized day columns, year view
-src/card.ts        cards and the caption/collaborator editors
+src/card.ts        cards, playback, the caption/collaborator editors
+src/networks.ts    network logos for the "where it went" row
 src/ui.ts          compass, bar, minimap, directory, comments, sheets
 supabase/          migration
 scripts/           link token and seed

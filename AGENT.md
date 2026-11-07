@@ -20,6 +20,8 @@ How an agent adds and updates posts on the Healwell posts board. The board only 
 | `scheduled_at` | timestamptz | publish time, ISO 8601 with offset; the board shows Zurich time |
 | `published` | boolean | `false` while scheduled, `true` once live |
 | `media_url` | text | public URL of the thumbnail in Storage (see below) |
+| `video_url` | text | optional: a directly playable video file (MP4) for reels; the play button plays it in the card, otherwise it opens the Instagram post |
+| `channels` | jsonb | where the post went: `[{"network": "instagram", "status": "published", "url": "https://www.instagram.com/reel/…"}]`. Networks: `instagram`, `facebook`, `threads`, `linkedin`, `gmb`, `tiktok`, `youtube`, `pinterest`, `twitter`, `bluesky`. Status: `published`, `scheduled`, `draft`, `error`. Cards show one logo per network |
 | `caption` | text | max 2,200 characters |
 | `collaborators` | text[] | Instagram handles; normalized to `@lowercase` automatically |
 | `updated_at` | timestamptz | set automatically |
@@ -58,19 +60,33 @@ curl -X POST "https://<ref>.supabase.co/rest/v1/posts" \
     "published": false,
     "media_url": "https://<ref>.supabase.co/storage/v1/object/public/thumbs/3f2b…e1.webp",
     "caption": "Let the exhale be longer than the inhale.",
-    "collaborators": ["@chutima.nuad"]
+    "collaborators": ["@chutima.nuad"],
+    "channels": [
+      { "network": "instagram", "status": "scheduled" },
+      { "network": "facebook", "status": "scheduled" },
+      { "network": "gmb", "status": "scheduled" }
+    ],
+    "video_url": "https://…/reel.mp4"
   }'
 ```
 
 ## Update a post
 
-Send only the fields you own: `scheduled_at`, `published`, `media_url`, `type`, `platform`.
+Send only the fields you own: `scheduled_at`, `published`, `media_url`, `video_url`, `channels`, `type`, `platform`.
 
 ```bash
 curl -X PATCH "https://<ref>.supabase.co/rest/v1/posts?external_id=eq.ig_17951234567890123" \
   -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "published": true, "scheduled_at": "2026-11-12T18:32:05+01:00" }'
+  -d '{
+    "published": true,
+    "scheduled_at": "2026-11-12T18:32:05+01:00",
+    "channels": [
+      { "network": "instagram", "status": "published", "url": "https://www.instagram.com/reel/DQx…/" },
+      { "network": "facebook", "status": "published", "url": "https://www.facebook.com/…" },
+      { "network": "gmb", "status": "error" }
+    ]
+  }'
 ```
 
 ## The one rule
