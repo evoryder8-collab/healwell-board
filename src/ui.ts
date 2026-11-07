@@ -1,12 +1,17 @@
 // Everything that floats over the canvas.
 import type { Board } from './board'
 import { captionField, collabEditor, compact, flash, h, ICON, thumb } from './card'
-import { store, type Post } from './store'
+import { signIn, store, type Post } from './store'
 import * as T from './time'
 
 const NAME_KEY = 'healwell-board:name'
-export const getName = () => { try { return localStorage.getItem(NAME_KEY) ?? '' } catch { return '' } }
-const setName = (n: string) => { try { localStorage.setItem(NAME_KEY, n) } catch { /* private mode */ } }
+const TOKEN_KEY = 'healwell-board:token'
+const read = (k: string) => { try { return localStorage.getItem(k) } catch { return null } }
+const write = (k: string, v: string | null) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v) } catch { /* private mode */ } }
+export const getName = () => read(NAME_KEY) ?? ''
+const setName = (n: string) => write(NAME_KEY, n)
+export const readToken = () => read(TOKEN_KEY)
+export const writeToken = (t: string | null) => write(TOKEN_KEY, t)
 
 const SVG = {
   minus: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
@@ -583,10 +588,15 @@ export function askName(changing = false): Promise<string> {
       input, go,
     )
     if (changing) {
+      const links = h('div', 'modal-links')
       const cancel = h('button', 'link-btn', 'Cancel')
       cancel.type = 'button'
       cancel.addEventListener('click', () => { wrap.remove(); resolve(getName()) })
-      card.append(cancel)
+      const out = h('button', 'link-btn', 'Sign out of this browser')
+      out.type = 'button'
+      out.addEventListener('click', () => { writeToken(null); write(NAME_KEY, null); location.replace(location.pathname + location.search) })
+      links.append(cancel, out)
+      card.append(links)
     }
     card.addEventListener('submit', e => {
       e.preventDefault()
@@ -603,15 +613,67 @@ export function askName(changing = false): Promise<string> {
   })
 }
 
-export function locked(kind: 'missing' | 'invalid' | 'error') {
+/** Shared sign-in. Resolves with the board token. */
+export function askLogin(note = ''): Promise<string> {
+  return new Promise(resolve => {
+    const glow = h('div', 'glow')
+    const wrap = h('div', 'modal is-locked')
+    const card = h('form', 'modal-card glass')
+    const user = h('input', 'modal-input')
+    user.name = 'username'
+    user.autocomplete = 'username'
+    user.autocapitalize = 'off'
+    user.spellcheck = false
+    user.placeholder = 'Username'
+    user.setAttribute('aria-label', 'Username')
+    const pass = h('input', 'modal-input')
+    pass.type = 'password'
+    pass.name = 'password'
+    pass.autocomplete = 'current-password'
+    pass.placeholder = 'Password'
+    pass.setAttribute('aria-label', 'Password')
+    const error = h('p', 'modal-error')
+    error.setAttribute('role', 'alert')
+    const go = h('button', 'primary-btn', 'Sign in')
+    go.type = 'submit'
+    go.disabled = true
+    const ready = () => { go.disabled = !user.value.trim() || !pass.value }
+    user.addEventListener('input', ready)
+    pass.addEventListener('input', ready)
+    card.append(h('p', 'modal-brand', '@healwell.ch posts'), h('h1', 'modal-title', 'Sign in'),
+      h('p', 'modal-text', note || 'Use the shared board login.'), user, pass, error, go)
+    card.addEventListener('submit', async e => {
+      e.preventDefault()
+      go.disabled = true
+      go.textContent = 'Signing in…'
+      error.textContent = ''
+      try {
+        const token = await signIn(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY, user.value.trim(), pass.value)
+        if (token) {
+          wrap.classList.add('is-leaving')
+          setTimeout(() => { wrap.remove(); glow.remove() }, 200)
+          return resolve(token)
+        }
+        error.textContent = 'Username or password is incorrect.'
+        pass.select()
+      } catch (err) {
+        error.textContent = (err as { locked?: boolean }).locked
+          ? 'Too many attempts. Try again in 15 minutes.'
+          : 'The board can’t be reached. Check your connection and try again.'
+      }
+      go.textContent = 'Sign in'
+      ready()
+    })
+    wrap.append(card)
+    document.body.append(glow, wrap)
+    requestAnimationFrame(() => user.focus())
+  })
+}
+
+export function unreachable() {
   const wrap = h('div', 'modal is-locked')
   const card = h('div', 'modal-card glass')
-  const copy = {
-    missing: ['This board opens from its private link', 'Open the full link you were sent. It ends with a long code after the # sign.'],
-    invalid: ['This link no longer opens the board', 'The board link has changed. Ask for the current one.'],
-    error: ['The board can’t be reached right now', 'Check your connection, then reload the page.'],
-  }[kind]
-  card.append(h('h1', 'modal-title', copy[0]), h('p', 'modal-text', copy[1]))
+  card.append(h('h1', 'modal-title', 'The board can’t be reached right now'), h('p', 'modal-text', 'Check your connection, then reload the page.'))
   wrap.append(card)
   document.body.append(wrap)
 }

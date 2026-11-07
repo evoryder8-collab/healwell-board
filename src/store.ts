@@ -27,6 +27,18 @@ export function normalizeHandle(raw: string): string {
 
 const PAGE = 1000
 
+/** Exchanges the shared username and password for the board token (null if wrong). */
+export async function signIn(url: string, key: string, username: string, password: string): Promise<string | null> {
+  const r = await fetch(`${url}/rest/v1/rpc/board_login`, {
+    method: 'POST',
+    headers: { apikey: key, 'content-type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+  const body = await r.json().catch(() => null)
+  if (!r.ok) throw Object.assign(new Error(body?.message ?? 'Sign-in failed'), { locked: body?.hint === 'locked' })
+  return body
+}
+
 class Store {
   db!: SupabaseClient
   dayCounts = new Map<number, { posts: number; scheduled: number }>()

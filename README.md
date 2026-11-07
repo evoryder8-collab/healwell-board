@@ -11,7 +11,7 @@ Posts arrive from outside: an agent writes rows into Supabase ([AGENT.md](AGENT.
 
 You need Node 22+ and a free Supabase project.
 
-1. **Database.** In the Supabase SQL editor, run [`supabase/migrations/20261107000000_board.sql`](supabase/migrations/20261107000000_board.sql). It creates the three tables, two read-only views, the access rules, the realtime triggers and the public `thumbs` bucket.
+1. **Database.** In the Supabase SQL editor, run the two files in [`supabase/migrations`](supabase/migrations) in order. They create the three tables, two read-only views, the access rules, the shared sign-in, the realtime triggers and the public `thumbs` bucket.
 
 2. **Board link.** Create the private link and register it with the database:
 
@@ -20,7 +20,16 @@ You need Node 22+ and a free Supabase project.
    npm run link -- https://<github-user>.github.io/<repo>/
    ```
 
-   Run the SQL it prints in the SQL editor. Keep the printed link private: anyone who has it can read and edit the board. Running `npm run link` again and applying its SQL replaces the link; the old one stops working at once.
+   Run the SQL it prints in the SQL editor. Keep the printed link private: anyone who has it can read and edit the board. Running `npm run link` again and applying its SQL replaces the link; the old one stops working at once, and everyone signs in again.
+
+   **Shared sign-in.** Set the username and password you both use (run in the SQL editor; only a bcrypt hash is stored):
+
+   ```sql
+   update private.access
+   set username = lower('<username>'), password_hash = extensions.crypt('<password>', extensions.gen_salt('bf'));
+   ```
+
+   Never put the password in this repository.
 
 3. **Frontend config.** Put the project URL and the publishable key (Project Settings → API Keys) in `.env`. Both are public by design: without the link token, row level security returns nothing.
 
@@ -44,7 +53,7 @@ You need Node 22+ and a free Supabase project.
 
 5. **Deploy.** Push to GitHub, then in the repository open Settings → Pages and set Source to **GitHub Actions**. Every push to `main` builds and deploys. Open the link from step 2.
 
-**Local development:** `npm run dev`, then open `http://localhost:5173/#<token>` (the part of the link after `#`).
+**Local development:** `npm run dev`, open `http://localhost:5173` and sign in, or add `#<token>` from the link.
 
 ## Using the board
 
@@ -56,7 +65,9 @@ You need Node 22+ and a free Supabase project.
 
 ## How access works
 
-The link carries a 256-bit random token after `#`, so it never reaches a server log. The app sends it as the `x-board-token` header. Row level security compares its SHA-256 with the hash stored in `private.board_token_hash()`; without a match the publishable key can read and write nothing. The board may only update `caption` and `collaborators` on posts, `name` on collaborators, and add comments.
+Open the board with the private link, or sign in with the shared username and password. Signing in returns the same token the link carries; the browser remembers it until you choose "Sign out of this browser" (tap your name). Ten wrong passwords within 15 minutes lock sign-in for the rest of that window; people already signed in are unaffected.
+
+The link carries a 256-bit random token after `#`, so it never reaches a server log. The app sends it as the `x-board-token` header. Row level security compares its SHA-256 with the token stored in the private `private.access` row; without a match the publishable key can read and write nothing. The board may only update `caption` and `collaborators` on posts, `name` on collaborators, and add comments.
 
 Realtime changes are broadcast by database triggers on a channel named after the token hash, so only link holders know which channel to join.
 
