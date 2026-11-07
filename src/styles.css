@@ -130,15 +130,7 @@ button { -webkit-user-select: none; user-select: none; }
   content: ""; position: absolute; top: 8%; right: 8%; width: 5px; height: 5px; border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 0 1.5px var(--paper);
 }
-.play {
-  position: absolute; top: 6%; right: 6%; width: clamp(14px, 16%, 28px); aspect-ratio: 1; border-radius: 50%;
-  display: grid; place-items: center; background: var(--media-badge);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-}
-.play svg { width: 56%; fill: var(--on-media); margin-left: 8%; }
-button.play { padding: 0; border: 0; cursor: pointer; transition: transform 0.15s var(--ease), background 0.15s; }
-button.play:hover { transform: scale(1.08); background: var(--accent); }
-.media.is-playing > .play, .media.is-playing > .play-big, .media.is-playing > .nets { display: none; }
+.media.is-playing > .play-big, .media.is-playing > .nets { display: none; }
 /* Video marker seen from afar: a see-through triangle across the middle of the thumbnail (about a quarter of the card). */
 .play-big {
   position: absolute; left: 50%; top: 50%; width: 66%; aspect-ratio: 1; transform: translate(-47%, -50%);
@@ -147,6 +139,7 @@ button.play:hover { transform: scale(1.08); background: var(--accent); }
 }
 .play-big svg { display: block; width: 100%; height: 100%; fill: var(--on-media); }
 span.play-big { pointer-events: none; }
+.lod-day .play-big { width: 58%; } /* about a fifth of the card, against a quarter from afar */
 .lod-month .play-big { filter: drop-shadow(0 0 1.5px var(--media-badge)) drop-shadow(0 1px 4px var(--media-badge)); }
 button.play-big { cursor: pointer; transition: opacity 0.15s ease; }
 @media (hover: hover) { button.play-big:hover { opacity: 0.85; } }
@@ -194,8 +187,8 @@ a.channel:hover { border-color: var(--accent-line); background: var(--accent-was
 .channel-status { color: var(--ink-3); }
 .dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--on-media); opacity: 0.55; }
 .dots i:first-child { opacity: 1; }
-@container (max-width: 30px) { .play, .dots, .lod-month .media.is-scheduled::after { display: none; } }
-@container (max-width: 44px) { .play { top: 5%; right: 5%; } .dots i { width: 3px; height: 3px; } }
+@container (max-width: 30px) { .dots, .lod-month .media.is-scheduled::after { display: none; } }
+@container (max-width: 44px) { .dots i { width: 3px; height: 3px; } }
 
 .meta { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; }
 .meta .time { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
