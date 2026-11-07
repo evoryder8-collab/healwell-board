@@ -78,6 +78,7 @@ button { -webkit-user-select: none; user-select: none; }
 .r-month::before, .r-week::before {
   content: ""; position: absolute; left: 0; top: 3px; width: 1px; height: 61px; background: var(--line-strong);
 }
+.r-month.is-stuck::before { display: none; }
 .r-week { top: calc(var(--baseline) - 62px); padding-left: 10px; font-size: 12px; color: var(--ink-3); }
 .r-week::before { background: var(--line); height: 59px; }
 .r-month.is-year { padding-left: 0; font-size: 13px; }

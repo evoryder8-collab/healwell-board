@@ -8,6 +8,7 @@ import * as T from './time'
 
 const LODS: Lod[] = ['year', 'month', 'week', 'day']
 const THRESHOLDS = [18, 76, 230]
+const STICKY_PAD = 16
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
 
 export function lodFor(dw: number, current?: Lod): Lod {
@@ -174,6 +175,7 @@ export class Board {
   private raf = 0
   private ribbon = h('div', 'ribbon')
   private labels = new Map<string, HTMLElement>()
+  private labelWidths = new WeakMap<HTMLElement, number>()
   private todayEl = h('div', 'today-mark')
   private glow = h('div', 'glow')
   private stage = h('div', 'stage')
@@ -338,8 +340,14 @@ export class Board {
         put(`ym${k}|${label}`, 'r-month is-year', label, x + 4)
         if (m === 0) put(`yy${y}`, 'r-day r-year', String(y), x + 4)
       } else {
-        put(`m${k}`, 'r-month', `${T.monthName(s)} ${y}`, x)
-        monthEdges.push(x)
+        // Sticky: the month under the left edge stays pinned there until the next month pushes it out.
+        const el = put(`m${k}`, 'r-month', `${T.monthName(s)} ${y}`, x)
+        let w = this.labelWidths.get(el)
+        if (w === undefined) { w = el.offsetWidth; this.labelWidths.set(el, w) }
+        const pinned = Math.min(Math.max(x, STICKY_PAD), cam.x(T.monthStart(k + 1)) - w - 16)
+        if (pinned !== x) el.style.transform = `translate3d(${pinned}px,0,0)`
+        el.classList.toggle('is-stuck', pinned > x + 0.5)
+        monthEdges.push(pinned)
       }
     }
 
