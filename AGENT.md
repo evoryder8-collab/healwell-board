@@ -30,6 +30,13 @@ How an agent adds and updates posts on the Healwell posts board. The board only 
 
 **comments**: `id`, `post_id` → posts.id, `author`, `body`, `created_at`. Written by people on the board; read them if you need them.
 
+## Existing rows
+
+The board was first filled from Metricool (brand "Healwell Massage Zurich Sihlcity", 2026 onward). Keep these ids stable so you update rows instead of duplicating them:
+
+- `mc_<id>`: one card per creative. Metricool often schedules the same creative as several entries (Instagram, Facebook/LinkedIn/Threads, Google Business Profile); they were merged when they share a publication time and either the caption or a media file. The id is the lowest Metricool post id in the group, and `channels` holds every network.
+- `ig_<shortcode>`: Instagram posts published outside Metricool's planner, found in Metricool's Instagram analytics.
+
 ## Thumbnails
 
 The board only shows small WebP thumbnails from the public `thumbs` bucket. For each post upload two files with a random, unguessable name (a UUID):

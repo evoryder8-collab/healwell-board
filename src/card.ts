@@ -89,6 +89,7 @@ export function makeCard(lod: Exclude<Lod, 'year'>, hooks: CardHooks): Card {
           if (img.complete && img.naturalWidth) media.classList.add('ok')
         }
       } else img.removeAttribute('src')
+      media.classList.toggle('is-blank', !p.media_url)
       decorate(media, p, lod)
       if (meta) {
         meta.innerHTML = ''
