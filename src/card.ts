@@ -13,6 +13,7 @@ export const h = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text 
 }
 
 const TYPE_LABEL: Record<Post['type'], string> = { reel: 'Reel', carousel: 'Carousel', image: 'Image', story: 'Story' }
+const PLAY_BIG = '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M14 10v80a7 7 0 0 0 10.6 6l66-40a7 7 0 0 0 0-12l-66-40A7 7 0 0 0 14 10Z"/></svg>'
 const PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.8v8.4a.5.5 0 0 0 .77.42l6.4-4.2a.5.5 0 0 0 0-.84l-6.4-4.2a.5.5 0 0 0-.77.42Z"/></svg>'
 export const ICON = {
   comment: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4.5h12a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H9l-3.6 2.7a.5.5 0 0 1-.8-.4V14.5H4A1.5 1.5 0 0 1 2.5 13V6A1.5 1.5 0 0 1 4 4.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
@@ -138,11 +139,13 @@ function decorate(media: HTMLElement, p: Post, lod: Exclude<Lod, 'year'>) {
     media.classList.remove('is-playing')
     delete media.dataset.playing
   }
-  media.querySelectorAll(':scope > .play, :scope > .dots, :scope > .nets').forEach(n => n.remove())
+  media.querySelectorAll(':scope > .play, :scope > .play-big, :scope > .dots, :scope > .nets').forEach(n => n.remove())
   const actionable = lod !== 'month' && (!!p.video_url || !!instagramUrl(p))
   if (p.type === 'reel' || p.video_url) {
-    const b = h(actionable ? 'button' : 'span', 'play')
-    b.innerHTML = PLAY
+    // From afar (Week, Month) a large see-through triangle marks every video; Day keeps the corner badge.
+    const big = lod !== 'day'
+    const b = h(actionable ? 'button' : 'span', big ? 'play-big' : 'play')
+    b.innerHTML = big ? PLAY_BIG : PLAY
     if (b instanceof HTMLButtonElement) {
       b.type = 'button'
       b.setAttribute('aria-label', p.video_url ? 'Play video' : 'Open the reel on Instagram')
