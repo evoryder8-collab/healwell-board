@@ -355,7 +355,7 @@ export class Board {
       if (dw >= 20) {
         for (let d = a - ((T.ymd(a).wd + 7) % 7); d <= b; d += 7) {
           const x = cam.x(d)
-          if (monthEdges.some(e => x >= e - 40 && x < e + 150)) continue
+          if (monthEdges.some(e => x > e - 90 && x < e + 160)) continue // keep week labels clear of month labels
           put(`w${d}`, 'r-week', `Week ${T.isoWeek(d)}`, x)
         }
       }

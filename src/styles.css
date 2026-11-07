@@ -13,6 +13,8 @@ html, body {
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent; text-rendering: optimizeLegibility;
 }
+html { touch-action: manipulation; } /* no double-tap page zoom on controls */
+.topbar, .bar, .stats, .minimap, .vbar { touch-action: none; } /* pinches over controls zoom the board */
 button, input, textarea { font: inherit; color: inherit; }
 button { -webkit-user-select: none; user-select: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

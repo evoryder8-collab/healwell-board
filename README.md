@@ -51,7 +51,13 @@ You need Node 22+ and a free Supabase project.
 
    `npm run seed -- --preview` only draws twelve sample thumbnails into `.seed/preview`.
 
-5. **Deploy.** Push to GitHub, then in the repository open Settings → Pages and set Source to **GitHub Actions**. Every push to `main` builds and deploys. Open the link from step 2.
+5. **Deploy.** The board lives at **https://matthewhua.ch/someschedule/**, a folder in Matthew's website repo (`Matthew-Hua-Bio-Page`, served by GitHub Pages). Publish a new version with:
+
+   ```bash
+   npm run publish:site
+   ```
+
+   It builds the app and replaces only the `someschedule/` folder on that repo's `main` branch. (Pushing this repo also deploys a copy to its own GitHub Pages address.)
 
 **Local development:** `npm run dev`, open `http://localhost:5173` and sign in, or add `#<token>` from the link.
 

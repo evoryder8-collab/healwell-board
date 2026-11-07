@@ -156,43 +156,58 @@ export class Camera {
 
   /** Wire pointer, wheel, gesture and keyboard input on the board element. */
   bind(el: HTMLElement, hooks: { doubleTap: (x: number, y: number) => void; key: (e: KeyboardEvent) => boolean }) {
+    // Pointers are tracked on the whole document so a pinch counts wherever the fingers land:
+    // on cards, link chips, captions or the floating controls. Sheets and dialogs keep their own touch.
     const pts = new Map<number, { x: number; y: number }>()
-    let drag: { id: number; x0: number; y0: number; moved: boolean; samples: { t: number; x: number; y: number }[] } | null = null
+    let drag: { id: number; x0: number; y0: number; moved: boolean; afterPinch?: boolean; samples: { t: number; x: number; y: number }[] } | null = null
     let pinch: { d: number; mx: number; my: number } | null = null
+    let pair: number[] = [] // the two pointers driving the current pinch
     let lastTap = { t: 0, x: 0, y: 0 }
     let suppressClick = false
 
     const interactive = (t: EventTarget | null) =>
       t instanceof Element && !!t.closest('input, textarea, button, a, select, [contenteditable], .no-pan')
+    const ownTouch = (t: EventTarget | null) => t instanceof Element && !!t.closest('.panel, .modal, .scrim, .suggest')
+    const reset = () => { pts.clear(); pinch = null; drag = null; pair = []; this.pinching = false; el.classList.remove('is-dragging') }
 
     const pinchState = () => {
-      const [a, b] = [...pts.values()]
+      const a = pts.get(pair[0])!, b = pts.get(pair[1])!
       return { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }
     }
 
-    el.addEventListener('pointerdown', e => {
-      suppressClick = false
-      if (e.button !== 0 || interactive(e.target)) return
-      this.stop()
+    document.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || ownTouch(e.target)) return
+      const touch = e.pointerType === 'touch'
+      // A primary touch starts a fresh gesture. iOS can drop "pointerup" when the touched card
+      // is removed mid-gesture (zooming swaps layers), which would otherwise leave a ghost finger.
+      if (e.isPrimary) { suppressClick = false; if (touch) reset() }
+      const free = el.contains(e.target as Node) && !interactive(e.target)
+      if (!touch && !free) return
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
-      if (pts.size === 2 && e.pointerType === 'touch') {
+      if (touch && pts.size >= 2) {
+        pair = [...pts.keys()].slice(-2)
+        for (const id of pair) { try { el.setPointerCapture(id) } catch { /* pointer already gone */ } }
+        this.stop()
         pinch = pinchState()
         this.pinching = true
+        suppressClick = true // lifting a pinch finger never taps the link or button under it
         drag = null
-      } else if (pts.size === 1) {
+      } else if (pts.size === 1 && free) {
+        this.stop()
         drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false, samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }] }
       }
-    })
+    }, true)
 
-    el.addEventListener('pointermove', e => {
+    document.addEventListener('pointermove', e => {
       const p = pts.get(e.pointerId)
       if (!p) return
       const dx = e.clientX - p.x, dy = e.clientY - p.y
       p.x = e.clientX; p.y = e.clientY
-      if (pinch && pts.size >= 2) {
+      if (pinch) {
+        if (!pair.includes(e.pointerId) || !pts.has(pair[0]) || !pts.has(pair[1])) return
         const s = pinchState()
         this.panBy(s.mx - pinch.mx, s.my - pinch.my)
-        this.zoomAt(s.mx, s.my, s.d / pinch.d)
+        if (pinch.d > 8 && s.d > 8) this.zoomAt(s.mx, s.my, s.d / pinch.d)
         pinch = s
         return
       }
@@ -201,24 +216,25 @@ export class Camera {
         const slop = e.pointerType === 'mouse' ? 4 : 8
         if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < slop) return
         drag.moved = true
-        el.setPointerCapture(e.pointerId)
+        try { el.setPointerCapture(e.pointerId) } catch { /* pointer already gone */ }
         el.classList.add('is-dragging')
       }
       this.panBy(dx, dy)
       drag.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY })
       if (drag.samples.length > 8) drag.samples.shift()
-    })
+    }, true)
 
     const end = (e: PointerEvent) => {
       if (!pts.has(e.pointerId)) return
       pts.delete(e.pointerId)
       if (pinch) {
-        if (pts.size < 2) {
+        if (pair.includes(e.pointerId)) {
           pinch = null
+          pair = []
           this.pinching = false
           this.lastZoom = performance.now()
           const [id, rest] = [...pts.entries()][0] ?? []
-          drag = rest ? { id: id!, x0: rest.x, y0: rest.y, moved: true, samples: [{ t: e.timeStamp, ...rest }] } : null
+          drag = rest ? { id: id!, x0: rest.x, y0: rest.y, moved: true, afterPinch: true, samples: [{ t: e.timeStamp, ...rest }] } : null
           this.onChange()
         }
         return
@@ -228,7 +244,8 @@ export class Camera {
       if (drag.moved) {
         suppressClick = true
         const s = drag.samples.filter(s => e.timeStamp - s.t < 90)
-        if (s.length >= 2 && e.type === 'pointerup') {
+        // The finger left over from a pinch is not a swipe: settle without momentum.
+        if (s.length >= 2 && e.type === 'pointerup' && !drag.afterPinch) {
           const a = s[0], b = s[s.length - 1], dt = Math.max(8, b.t - a.t)
           this.fling((b.x - a.x) / dt, (b.y - a.y) / dt)
         } else this.fling(0, 0)
@@ -243,9 +260,9 @@ export class Camera {
       }
       drag = null
     }
-    el.addEventListener('pointerup', end)
-    el.addEventListener('pointercancel', end)
-    el.addEventListener('click', e => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false } }, true)
+    document.addEventListener('pointerup', end, true)
+    document.addEventListener('pointercancel', end, true)
+    document.addEventListener('click', e => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false } }, true)
     el.addEventListener('dblclick', e => { if (!interactive(e.target)) hooks.doubleTap(e.clientX, e.clientY) })
 
     el.addEventListener('wheel', e => {
@@ -277,6 +294,8 @@ export class Camera {
       }
     }
     for (const t of ['gesturestart', 'gesturechange', 'gestureend']) el.addEventListener(t, gesture as EventListener, { passive: false })
+    // Never let Safari zoom the page itself, even when a pinch starts over a floating control.
+    for (const t of ['gesturestart', 'gesturechange']) document.addEventListener(t, e => e.preventDefault(), { passive: false })
 
     addEventListener('keydown', e => {
       const t = e.target as HTMLElement

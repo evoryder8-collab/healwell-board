@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "link": "node scripts/link.mjs",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "publish:site": "node scripts/publish-site.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0"
