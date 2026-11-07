@@ -33,6 +33,14 @@ function button(cls: string, label: string, icon: string, text = '') {
   return b
 }
 
+// Totals split by kind: photo posts (images, carousels) and videos (reels, anything playable).
+const KIND_ICON = {
+  photo: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="6.6" r="1.2" fill="currentColor"/><path d="m3 12 3.4-3.2 2.2 2 2-1.6L13.5 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+  video: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6.7 5.8v4.4L10.4 8z" fill="currentColor"/></svg>',
+}
+const splitText = (posts: number, videos: number) =>
+  `${posts} post${posts === 1 ? '' : 's'}${posts ? ` (${posts - videos} photo, ${videos} video)` : ''}`
+
 // Panels: side drawers on desktop, bottom sheets on phones ---------------------
 
 const scrim = h('div', 'scrim')
@@ -337,28 +345,30 @@ export class UI {
 
   private renderStats(year: boolean, y: number, m: number) {
     const counts = store.dayCounts
-    const cells: { key: string; label: string; posts: number; scheduled: number; go: () => void }[] = []
+    const cells: { key: string; label: string; posts: number; scheduled: number; videos: number; go: () => void }[] = []
     if (year) {
       for (let k = 0; k < 12; k++) {
         const s = T.dayOf(y, k, 1), e = T.dayOf(y, k + 1, 1)
-        let posts = 0, scheduled = 0
-        for (let d = s; d < e; d++) { const c = counts.get(d); if (c) { posts += c.posts; scheduled += c.scheduled } }
-        cells.push({ key: String(k), label: `${T.monthName(s)}, ${posts} post${posts === 1 ? '' : 's'}`, posts, scheduled,
+        let posts = 0, scheduled = 0, videos = 0
+        for (let d = s; d < e; d++) { const c = counts.get(d); if (c) { posts += c.posts; scheduled += c.scheduled; videos += c.videos } }
+        cells.push({ key: String(k), label: `${T.monthName(s)}, ${splitText(posts, videos)}`, posts, scheduled, videos,
           go: () => this.board.goTo(Math.floor((s + e) / 2), this.board.presets.month) })
       }
     } else {
       for (let d = T.dayOf(y, m, 1); d < T.dayOf(y, m + 1, 1); d++) {
         const c = counts.get(d)
-        cells.push({ key: String(d), label: `${T.weekdayShort(d)} ${T.dayMonth(d)}, ${c?.posts ?? 0} post${c?.posts === 1 ? '' : 's'}`,
-          posts: c?.posts ?? 0, scheduled: c?.scheduled ?? 0, go: () => this.board.goTo(d, Math.max(this.board.cam.dw, this.board.presets.month)) })
+        cells.push({ key: String(d), label: `${T.weekdayShort(d)} ${T.dayMonth(d)}, ${splitText(c?.posts ?? 0, c?.videos ?? 0)}`,
+          posts: c?.posts ?? 0, scheduled: c?.scheduled ?? 0, videos: c?.videos ?? 0, go: () => this.board.goTo(d, Math.max(this.board.cam.dw, this.board.presets.month)) })
       }
     }
     const total = cells.reduce((a, c) => a + c.posts, 0)
     const scheduled = cells.reduce((a, c) => a + c.scheduled, 0)
+    const videos = cells.reduce((a, c) => a + c.videos, 0)
     const max = Math.max(1, ...cells.map(c => c.posts))
     const head = h('div', 'stats-head')
     head.append(h('strong', 'stats-total', total.toLocaleString('en-GB')),
-      h('span', 'stats-label', `post${total === 1 ? '' : 's'} in ${year ? y : `${T.monthName(T.dayOf(y, m, 1))} ${y}`}`))
+      h('span', 'stats-label is-long', `post${total === 1 ? '' : 's'} in ${year ? y : `${T.monthName(T.dayOf(y, m, 1))} ${y}`}`),
+      h('span', 'stats-label is-short', `post${total === 1 ? '' : 's'} in ${year ? y : `${T.monthShort(T.dayOf(y, m, 1))} ${y}`}`))
     const bars = h('div', `stats-bars${year ? ' is-year' : ''}`)
     for (const c of cells) {
       const bar = h('button', `stats-bar${c.posts ? '' : ' is-empty'}`)
@@ -374,7 +384,15 @@ export class UI {
     }
     const foot = h('p', 'stats-foot', !total ? 'No posts yet' : !scheduled ? 'All published'
       : scheduled === total ? 'All scheduled' : `${(total - scheduled).toLocaleString('en-GB')} published, ${scheduled.toLocaleString('en-GB')} scheduled`)
-    this.stats.replaceChildren(head, bars)
+    const split = h('div', 'stats-split')
+    split.setAttribute('aria-label', splitText(total, videos))
+    for (const [kind, n, one, many] of [['photo', total - videos, 'photo post', 'photo posts'], ['video', videos, 'video', 'videos']] as const) {
+      const item = h('span', `stats-kind is-${kind}${n ? '' : ' is-zero'}`)
+      item.innerHTML = KIND_ICON[kind]
+      item.append(h('b', '', n.toLocaleString('en-GB')), ` ${n === 1 ? one : many}`)
+      split.append(item)
+    }
+    this.stats.replaceChildren(head, split, bars)
     if (year) {
       const months = h('div', 'stats-months')
       for (let k = 0; k < 12; k++) months.append(h('span', '', T.monthShort(T.dayOf(y, k, 1))[0]))

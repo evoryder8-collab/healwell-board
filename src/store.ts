@@ -43,7 +43,7 @@ export async function signIn(url: string, key: string, username: string, passwor
 
 class Store {
   db!: SupabaseClient
-  dayCounts = new Map<number, { posts: number; scheduled: number }>()
+  dayCounts = new Map<number, { posts: number; scheduled: number; videos: number }>()
   firstDay: number | null = null
   lastDay: number | null = null
   directory = new Map<string, Collaborator>()
@@ -87,12 +87,12 @@ class Store {
   }
 
   async loadDays() {
-    const rows = await this.all<{ day: string; posts: number; scheduled: number }>('post_days', 'day,posts,scheduled')
+    const rows = await this.all<{ day: string; posts: number; scheduled: number; videos: number }>('post_days', 'day,posts,scheduled,videos')
     this.dayCounts.clear()
     let lo = Infinity, hi = -Infinity
     for (const r of rows) {
       const d = Math.round(Date.parse(r.day + 'T00:00:00Z') / 86_400_000)
-      this.dayCounts.set(d, { posts: r.posts, scheduled: r.scheduled })
+      this.dayCounts.set(d, { posts: r.posts, scheduled: r.scheduled, videos: r.videos ?? 0 })
       lo = Math.min(lo, d); hi = Math.max(hi, d)
     }
     this.firstDay = rows.length ? lo : null
