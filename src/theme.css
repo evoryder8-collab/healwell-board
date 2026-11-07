@@ -1,0 +1,51 @@
+/*
+  Theme: every color in the app lives here. To apply Matthew's brand, change
+  the values below; nothing else needs to change. Canvas drawing reads these
+  variables too.
+*/
+:root {
+  /* Surfaces */
+  --paper: #fdfcfa;          /* page background, bright warm white */
+  --raised: #ffffff;         /* inputs, popovers */
+  --tint: #f5f1ec;           /* hover wash, quiet fills */
+  --skeleton: #eee9e3;       /* loading placeholders */
+  --line: #e7e1d9;           /* hairlines, the ribbon baseline */
+  --line-strong: #d6cec4;
+
+  /* Type */
+  --ink: #2e2a26;            /* primary text */
+  --ink-2: #6c645c;          /* secondary text */
+  --ink-3: #a69d93;          /* placeholders, quiet marks */
+
+  /* The one deep accent: Lake Zurich at dusk */
+  --accent: #1d4f5a;
+  --accent-hover: #163e47;
+  --on-accent: #ffffff;
+  --accent-wash: rgba(29, 79, 90, 0.07);
+  --accent-line: rgba(29, 79, 90, 0.35);
+
+  /* Slow light behind the ribbon */
+  --glow-1: rgba(120, 172, 176, 0.34);
+  --glow-2: rgba(226, 201, 174, 0.42);
+  --glow-3: rgba(29, 79, 90, 0.16);
+
+  /* Year view bars */
+  --bar-published: rgba(46, 42, 38, 0.34);
+  --bar-scheduled: #1d4f5a;
+  --strip: rgba(46, 42, 38, 0.035);
+
+  /* Floating glass */
+  --glass: rgba(253, 251, 248, 0.74);
+  --glass-strong: rgba(253, 251, 248, 0.9);
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --shadow-float: 0 10px 34px rgba(58, 44, 30, 0.12), 0 1px 3px rgba(58, 44, 30, 0.08);
+  --shadow-lift: 0 10px 24px rgba(58, 44, 30, 0.14), 0 2px 6px rgba(58, 44, 30, 0.08);
+  --scrim: rgba(46, 42, 38, 0.18);
+
+  /* Media overlays */
+  --media-badge: rgba(30, 26, 22, 0.42);
+  --on-media: #ffffff;
+
+  /* Feedback */
+  --danger: #9b3d33;
+}
