@@ -158,7 +158,7 @@ function decorate(media: HTMLElement, p: Post, lod: Exclude<Lod, 'year'>) {
     const nets = h('span', 'nets')
     nets.setAttribute('aria-label', 'Posted to ' + chans.map(c => networkInfo(c.network).label).join(', '))
     for (const c of chans.slice(0, 6)) {
-      const i = h('span', `net is-${statusOf(c)}`)
+      const i = h('span', `net net-${networkKey(c.network)} is-${statusOf(c)}`)
       i.innerHTML = networkInfo(c.network).icon
       nets.append(i)
     }
@@ -175,7 +175,8 @@ function channelRow(p: Post): HTMLElement | null {
   for (const c of chans) {
     const info = networkInfo(c.network)
     const status = statusOf(c)
-    const chip = c.url ? h('a', `channel is-${status}`) : h('span', `channel is-${status}`)
+    const cls = `channel net-${networkKey(c.network)} is-${status}`
+    const chip = c.url ? h('a', cls) : h('span', cls)
     if (chip instanceof HTMLAnchorElement) { chip.href = c.url!; chip.target = '_blank'; chip.rel = 'noopener' }
     chip.title = c.url ? `Open on ${info.label}` : `${info.label}, ${status}`
     chip.innerHTML = info.icon

@@ -48,4 +48,22 @@
 
   /* Feedback */
   --danger: #9b3d33;
+
+  /* Network logos: each platform's own brand colors */
+  --net-instagram-1: #feda75;
+  --net-instagram-2: #fa7e1e;
+  --net-instagram-3: #d62976;
+  --net-instagram-4: #962fbf;
+  --net-instagram-5: #4f5bd5;
+  --net-facebook: #0866ff;
+  --net-threads: #000000;
+  --net-linkedin: #0a66c2;
+  --net-gmb: #4285f4;
+  --net-tiktok: #000000;
+  --net-youtube: #ff0000;
+  --net-pinterest: #e60023;
+  --net-twitter: #000000;
+  --net-bluesky: #1185fe;
+  --net-mark: #ffffff;       /* the white "f", "in", play triangle inside filled logos */
+  --net-pill: rgba(255, 255, 255, 0.92);
 }

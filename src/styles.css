@@ -141,13 +141,32 @@ button.play:hover { transform: scale(1.08); background: var(--accent); }
 .dots { position: absolute; top: 7%; right: 7%; display: flex; gap: 3px; filter: drop-shadow(0 0 2px var(--media-badge)); }
 .nets {
   position: absolute; left: 6px; bottom: 6px; display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 99px;
-  background: var(--media-badge); color: var(--on-media); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  background: var(--net-pill); box-shadow: 0 1px 3px var(--media-badge);
 }
-.net { display: grid; width: 13px; height: 13px; }
+.net { display: grid; width: 13px; height: 13px; border-radius: 4px; }
 .net svg { width: 13px; height: 13px; }
-.net.is-scheduled, .net.is-draft { opacity: 0.55; }
-.net.is-error { color: var(--danger); background: var(--on-media); border-radius: 50%; }
-.net-more { font-size: 10.5px; font-weight: 600; }
+.net.is-scheduled, .net.is-draft { opacity: 0.45; }
+.net.is-error { box-shadow: 0 0 0 1.5px var(--danger); }
+.net-more { font-size: 10.5px; font-weight: 600; color: var(--ink-2); }
+/* Brand colors per network (values in theme.css) */
+.nf { fill: var(--c, currentColor); }
+.ns { stroke: var(--c, currentColor); }
+.nm { fill: var(--net-mark); }
+.net-instagram { --c: url(#net-ig-grad); }
+.net-facebook { --c: var(--net-facebook); }
+.net-threads { --c: var(--net-threads); }
+.net-linkedin { --c: var(--net-linkedin); }
+.net-gmb { --c: var(--net-gmb); }
+.net-tiktok { --c: var(--net-tiktok); }
+.net-youtube { --c: var(--net-youtube); }
+.net-pinterest { --c: var(--net-pinterest); }
+.net-twitter { --c: var(--net-twitter); }
+.net-bluesky { --c: var(--net-bluesky); }
+#net-ig-grad stop:nth-child(1) { stop-color: var(--net-instagram-1); }
+#net-ig-grad stop:nth-child(2) { stop-color: var(--net-instagram-2); }
+#net-ig-grad stop:nth-child(3) { stop-color: var(--net-instagram-3); }
+#net-ig-grad stop:nth-child(4) { stop-color: var(--net-instagram-4); }
+#net-ig-grad stop:nth-child(5) { stop-color: var(--net-instagram-5); }
 .channels { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 2px; }
 .channel {
   display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px 0 7px; border-radius: 8px;
@@ -156,6 +175,7 @@ button.play:hover { transform: scale(1.08); background: var(--accent); }
 .channel svg { width: 14px; height: 14px; flex: none; }
 a.channel:hover { border-color: var(--accent-line); background: var(--accent-wash); color: var(--accent); }
 .channel.is-scheduled, .channel.is-draft { color: var(--ink-2); border-style: dashed; }
+.channel.is-scheduled svg, .channel.is-draft svg { opacity: 0.55; }
 .channel.is-error { color: var(--danger); border-color: var(--danger); }
 .channel-status { color: var(--ink-3); }
 .dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--on-media); opacity: 0.55; }
