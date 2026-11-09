@@ -165,9 +165,11 @@ export class Camera {
     let lastTap = { t: 0, x: 0, y: 0 }
     let suppressClick = false
 
+    // The play triangle covers much of a video card, so a swipe that starts on it still moves the
+    // board; only a tap plays (a drag suppresses the click).
     const interactive = (t: EventTarget | null) =>
-      t instanceof Element && !!t.closest('input, textarea, button, a, select, [contenteditable], .no-pan')
-    const ownTouch = (t: EventTarget | null) => t instanceof Element && !!t.closest('.panel, .modal, .scrim, .suggest')
+      t instanceof Element && !!t.closest('input, textarea, button:not(.play-big), a, select, [contenteditable], .no-pan')
+    const ownTouch = (t: EventTarget | null) => t instanceof Element && !!t.closest('.panel, .modal, .scrim, .suggest, .viewer')
     const reset = () => { pts.clear(); pinch = null; drag = null; pair = []; this.pinching = false; el.classList.remove('is-dragging') }
 
     const pinchState = () => {

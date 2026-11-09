@@ -130,7 +130,6 @@ button { -webkit-user-select: none; user-select: none; }
   content: ""; position: absolute; top: 8%; right: 8%; width: 5px; height: 5px; border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 0 1.5px var(--paper);
 }
-.media.is-playing > .play-big, .media.is-playing > .nets { display: none; }
 /* Video marker seen from afar: a see-through triangle across the middle of the thumbnail (about a quarter of the card). */
 .play-big {
   position: absolute; left: 50%; top: 50%; width: 66%; aspect-ratio: 1; transform: translate(-47%, -50%);
@@ -144,7 +143,6 @@ span.play-big { pointer-events: none; }
 button.play-big { cursor: pointer; transition: opacity 0.15s ease; }
 @media (hover: hover) { button.play-big:hover { opacity: 0.85; } }
 button.play-big:focus-visible { opacity: 0.85; outline: 2px solid var(--on-media); outline-offset: 2px; border-radius: 12px; }
-.player { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; object-fit: cover; background: var(--media-badge); cursor: auto; }
 .dots { position: absolute; top: 7%; right: 7%; display: flex; gap: 3px; filter: drop-shadow(0 0 2px var(--media-badge)); }
 .nets {
   position: absolute; left: 6px; bottom: 6px; display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 99px;
@@ -545,6 +543,36 @@ a.channel:hover { border-color: var(--accent-line); background: var(--accent-was
 .modal-error:empty { min-height: 0; margin-top: -6px; }
 body > .glow { position: fixed; }
 @keyframes fade-in { from { opacity: 0; } }
+
+/* Video player, above the board ---------------------------------------------- */
+
+.viewer {
+  position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px;
+  background: var(--viewer-backdrop); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  animation: fade-in 0.2s var(--ease); transition: opacity 0.16s;
+}
+.viewer.is-leaving { opacity: 0; pointer-events: none; }
+.viewer-stage {
+  --ratio: 9 / 16;
+  margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  animation: viewer-in 0.24s var(--ease);
+}
+.viewer-video {
+  display: block; aspect-ratio: var(--ratio); border-radius: 16px; background: var(--video-bg); object-fit: contain;
+  width: min(calc(100vw - 32px), calc((100vh - 150px) * (var(--ratio))), calc(880px * (var(--ratio))));
+  width: min(calc(100vw - 32px), calc((100dvh - 150px) * (var(--ratio))), calc(880px * (var(--ratio))));
+}
+.viewer-video:focus { outline: none; }
+.viewer-when { font-size: 13px; color: var(--on-media); opacity: 0.78; font-variant-numeric: tabular-nums; }
+.viewer-close {
+  position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--media-badge); color: var(--on-media); cursor: pointer; transition: transform 0.15s var(--ease);
+}
+.viewer-close svg { width: 20px; height: 20px; }
+@media (hover: hover) { .viewer-close:hover { transform: scale(1.06); } }
+.viewer-close:focus-visible { outline: 2px solid var(--on-media); outline-offset: 2px; }
+@keyframes viewer-in { from { opacity: 0; transform: scale(0.97); } }
 
 /* Phones --------------------------------------------------------------------- */
 

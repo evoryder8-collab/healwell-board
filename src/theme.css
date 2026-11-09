@@ -45,6 +45,8 @@
   /* Media overlays */
   --media-badge: rgba(30, 26, 22, 0.42);
   --on-media: #ffffff;
+  --viewer-backdrop: rgba(24, 21, 18, 0.84);  /* behind the video player */
+  --video-bg: #000000;                         /* letterbox inside the player */
 
   /* Feedback */
   --danger: #9b3d33;

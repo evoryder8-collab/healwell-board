@@ -2,6 +2,7 @@
 import { byNetworkOrder, networkInfo, networkKey } from './networks'
 import { normalizeHandle, store, type Channel, type Post } from './store'
 import { clock, longDate, weekdayShort, dayMonth } from './time'
+import { openViewer } from './viewer'
 
 export type Lod = 'year' | 'month' | 'week' | 'day'
 
@@ -112,32 +113,14 @@ const statusOf = (c: Channel) => (c.status ?? 'published').toLowerCase()
 /** The original post on Instagram, if the agent recorded one. */
 export const instagramUrl = (p: Post) => p.channels?.find(c => networkKey(c.network) === 'instagram' && c.url)?.url ?? null
 
-let playing: HTMLVideoElement | null = null
-
-/** Plays the reel inside the card, or opens the original post when no file is playable. */
-function play(media: HTMLElement, p: Post) {
+/** Plays the reel in the player above the board, or opens the original post when no file is playable. */
+function play(p: Post) {
   const original = instagramUrl(p)
   if (!p.video_url) { if (original) open(original, '_blank', 'noopener'); return }
-  playing?.pause()
-  const v = h('video', 'player no-pan')
-  v.src = p.video_url
-  v.controls = true
-  v.playsInline = true
-  v.poster = p.media_url ?? ''
-  v.addEventListener('error', () => { v.remove(); media.classList.remove('is-playing'); if (original) open(original, '_blank', 'noopener') }, { once: true })
-  media.append(v)
-  media.classList.add('is-playing')
-  media.dataset.playing = p.id
-  playing = v
-  v.play().catch(() => { /* controls stay visible; a tap starts it */ })
+  openViewer({ src: p.video_url, poster: p.media_url, when: `${weekdayShort(p.day)} ${dayMonth(p.day)}, ${clock(p.minutes)}`, fallback: original })
 }
 
 function decorate(media: HTMLElement, p: Post, lod: Exclude<Lod, 'year'>) {
-  if (media.dataset.playing && media.dataset.playing !== p.id) {
-    media.querySelector('video')?.remove()
-    media.classList.remove('is-playing')
-    delete media.dataset.playing
-  }
   media.querySelectorAll(':scope > .play-big, :scope > .dots, :scope > .nets').forEach(n => n.remove())
   const actionable = lod !== 'month' && (!!p.video_url || !!instagramUrl(p))
   if (p.type === 'reel' || p.video_url) {
@@ -148,7 +131,7 @@ function decorate(media: HTMLElement, p: Post, lod: Exclude<Lod, 'year'>) {
       b.type = 'button'
       b.setAttribute('aria-label', p.video_url ? 'Play video' : 'Open the reel on Instagram')
       b.title = p.video_url ? 'Play' : 'Open on Instagram'
-      b.addEventListener('click', e => { e.stopPropagation(); play(media, p) })
+      b.addEventListener('click', e => { e.stopPropagation(); play(p) })
     }
     media.append(b)
   } else if (p.type === 'carousel') {
